@@ -71,5 +71,7 @@ def getVotesFromImage(imageName):
 
 
 if __name__ == "__main__":
-    print(getVotesFromImage("test.jpg"))
+    VISUAL_DEBUG = True
+    DEBUG = True
+    print(getVotesFromImage("../testimages/card__859724459716.jpg"))
 
