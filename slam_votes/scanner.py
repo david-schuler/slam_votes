@@ -2,15 +2,18 @@ from __future__ import division
 from __future__ import print_function
 import cv2
 import numpy
-
+import os.path
 
 DEBUG = False
-VISUAL_DEBUG = False 
+VISUAL_DEBUG = True 
 
 
 def getVotesFromImage(imageName):
     # load the image and convert it to grayscale
     #TODO check if file exists
+
+    if not os.path.exists(imageName):
+        raise RuntimeError("File not found: {}".format(imageName))
     img = cv2.imread(imageName, cv2.CV_8UC1)
 
     # blur image
