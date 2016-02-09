@@ -14,9 +14,10 @@ VISUAL_DEBUG_SHOW_ALL_LINES = False
 VISUAL_DEBUG_SHOW_BOUNDING_EDGES = False
 
 
-def displayLine(img, line):
+# draws a line with given coordinate and color in an image
+def displayLine(img, line, color=(0, 0, 255)):
     x1, y1, x2, y2 = line
-    cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+    cv2.line(img, (x1, y1), (x2, y2), color, 2)
 
 
 def getGradient(line):
@@ -54,7 +55,7 @@ def getVotesFromImage(imageName):
             working_img, 100, 255,
             cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-    if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_ALL_LINES:
+    if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_BLURED_AND_THRESHOLDED_IMG:
         resizeAndDisplay(working_img, "Thresh", 1)
         resizeAndDisplay(display_img, "comp", 0)
 
@@ -77,25 +78,24 @@ def getVotesFromImage(imageName):
     y_minline = None
     y_maxline = None
     for i in lines:
-        count = 0
-        for x1, y1, x2, y2 in i:
-            # TODO if isVertical(line)
-            if x1 > x_max or x2 > x_max:
-                x_max = max(x1, x2)
-                x_maxline = i[0]
-            if x1 < x_min or x2 < x_min:
-                x_min = min(x1, x2)
-                x_minline = i[0]
-
-            if y1 > y_max or y2 > y_max:
-                y_max = max(y1, y2)
-                y_maxline = i[0]
-            if y1 < y_min or y2 < y_min:
-                y_min = min(y1, y2)
-                y_minline = i[0]
-            VISUAL_DEBUG_ALL_LINES = False
-            if VISUAL_DEBUG and VISUAL_DEBUG_ALL_LINES:
-                cv2.line(display_img, (x1, y1), (x2, y2), (255, 0, 0), 2)
+        # for some reason i is an array with 1 line as item
+        line = i[0]
+        x1, y1, x2, y2 = line
+        # TODO if isVertical(line)
+        if x1 > x_max or x2 > x_max:
+            x_max = max(x1, x2)
+            x_maxline = line
+        if x1 < x_min or x2 < x_min:
+            x_min = min(x1, x2)
+            x_minline = line
+        if y1 > y_max or y2 > y_max:
+            y_max = max(y1, y2)
+            y_maxline = line
+        if y1 < y_min or y2 < y_min:
+            y_min = min(y1, y2)
+            y_minline = line
+        if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_ALL_LINES:
+            displayLine(display_img, line, (255, 0, 0))
 
     if VISUAL_DEBUG:
         displayLine(display_img, x_minline)
@@ -129,19 +129,17 @@ def getVotesFromImage(imageName):
     # translate images
 
     min_x = int(round((x_minline[0] + x_minline[2]) / 2))
-    min_y = int(round((y_minline[1] +  y_minline[3]) / 2))
+    min_y = int(round((y_minline[1] + y_minline[3]) / 2))
     M = numpy.float32([[1, 0, -1 * min_x], [0, 1, -1 * min_y]])
     rows, cols = img.shape
     dst = cv2.warpAffine(img, M, (cols, rows))
     working_img = cv2.warpAffine(working_img, M, (cols, rows))
     display_img = cv2.warpAffine(display_img, M, (cols, rows))
 
-
     max_x = int(round((x_maxline[0] + x_maxline[2]) / 2))
-    max_y = int(round((y_maxline[1] +  y_maxline[3]) / 2))
+    max_y = int(round((y_maxline[1] + y_maxline[3]) / 2))
     x_range = max_x - min_x
     y_range = max_y - min_y
-
 
     # offset for first (first column in first row) box
     x_offset = x_range * 0.505
@@ -195,7 +193,7 @@ def getVotesFromImage(imageName):
             print("{} : {}".format(key, value[1]))
 
     if VISUAL_DEBUG:
-        resizeAndDisplay(working_img, "Resul", 10)
+        resizeAndDisplay(working_img, "Result", 10)
         resizeAndDisplay(display_img, "Display Image", 3000)
     return votes
 
