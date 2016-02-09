@@ -13,7 +13,6 @@ VISUAL_DEBUG = True
 def displayLine(img, line):
     x1, y1, x2, y2 = line
     cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
-
  
 def getGradient(line):
     x1, y1, x2, y2 = line
@@ -22,6 +21,17 @@ def getGradient(line):
         m = (y2 - y1) / (x2 - x1) 
     return m
 
+def resizeAndDisplay(img, name, wait):
+
+    # resize image
+    new_with = 500
+    # the ratio of the new image to the old image
+    r = new_with / img.shape[1]
+    dim = (new_with, int(img.shape[0] * r))
+    resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+    cv2.imshow(name, resized)
+    cv2.waitKey(wait)
+
 def getVotesFromImage(imageName):
     # load the image and convert it to grayscale
     if not os.path.exists(imageName):
@@ -29,7 +39,7 @@ def getVotesFromImage(imageName):
     img = cv2.imread(imageName, cv2.CV_8UC1)
 
     if VISUAL_DEBUG:
-        display_img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+        display_img = cv2.imread(imageName, cv2.IMREAD_COLOR)
 
 
     # blur image
@@ -38,21 +48,27 @@ def getVotesFromImage(imageName):
     # blur = cv2.GaussianBlur(img, (5, 5), 10)
 
     # get black white image
-    working_img = cv2.adaptiveThreshold(
-            img, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-            cv2.THRESH_BINARY, 41, 20)
+    working_img = img.copy()
+    working_img = cv2.GaussianBlur(working_img, (15, 15), 0)
+    tmp, working_img = cv2.threshold(working_img, 100, 255, cv2.THRESH_BINARY)
+
+
+    if False and VISUAL_DEBUG:
+        resizeAndDisplay(working_img, "Thresh", 1)
+        resizeAndDisplay(display_img, "comp", 0)
+#    working_img = cv2.adaptiveThreshold(
+#            img, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+#            cv2.THRESH_BINARY, 41, 20)
     #invert image
     working_img = (255 - working_img)
 
 
 
     # detect lines in image 
-    # edges = cv2.Canny(working_img, 50, 200, apertureSize = 3)
-    # edges = cv2.Canny(color_img, 50, 200, apertureSize = 3)
-    edges = cv2.Canny(img, 50, 100, apertureSize = 3)
-    lines = cv2.HoughLinesP(edges, 1, numpy.pi/180, 100,  minLineLength = 50, maxLineGap=6)
+    edges = cv2.Canny(working_img, 100, 200, apertureSize = 3)
+    lines = cv2.HoughLinesP(edges, 1, numpy.pi/180, 40,  minLineLength = 10, maxLineGap=6)
     if DEBUG and (lines is not None):
-        print("Deteted {} lines in image", format(len(lines)))
+        print("Deteted {} lines in image".format(len(lines)))
     x_min = sys.maxsize
     x_max = 0
     y_min = sys.maxsize 
@@ -78,14 +94,21 @@ def getVotesFromImage(imageName):
             if y1 < y_min or y2 < y_min:
                 y_min = min(y1, y2)
                 y_minline = i[0]
-            # cv2.line(display_img,(x1,y1),(x2,y2),(0,0,255),2)
+            VISUAL_DEBUG_ALL_LINES = False
+            if VISUAL_DEBUG and VISUAL_DEBUG_ALL_LINES:
+                cv2.line(display_img,(x1,y1),(x2,y2),(255,0,0),2)
 
     if VISUAL_DEBUG:
         displayLine(display_img, x_minline)
         displayLine(display_img, x_maxline)
         displayLine(display_img, y_minline)
         displayLine(display_img, y_maxline)
-
+        resizeAndDisplay(display_img, "Corners", 10)
+        #displayLine(working_img, x_minline)
+        #displayLine(working_img, x_maxline)
+        #displayLine(working_img, y_minline)
+        #displayLine(working_img, y_maxline)
+       # resizeAndDisplay(working_img, "Working Corners", 0)
     m_vert_1 = getGradient(x_minline)
     m_vert_2 = getGradient(x_maxline)
 
@@ -147,25 +170,16 @@ def getVotesFromImage(imageName):
             print("{} : {}".format(key, value[1]))
 
     if VISUAL_DEBUG:
-        # resize image
-        # the ratio of the new image to the old image
-        newWith = 500
-        r = newWith / img.shape[1]
-        dim = (newWith, int(img.shape[0] * r))
-        # perform the actual resizing of the image and show it
-        resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
-        resizedResult = cv2.resize(
-                working_img, dim, interpolation=cv2.INTER_AREA)
-
-        cv2.imshow("Original", resized)
-        cv2.imshow("Result", resizedResult)
-        cv2.waitKey(3000)
-
+        resizeAndDisplay(working_img, "Resul", 10)
+        resizeAndDisplay(display_img, "Display Image", 3000)
     return votes
 
 
 if __name__ == "__main__":
     VISUAL_DEBUG = True
     DEBUG = True
-    print(getVotesFromImage("../testimages/card__859724459716.jpg"))
+    imageName = "../testimages/card__859724459716.jpg"
+    imageName = "../testimages/card_webcam__898656717575.jpg"
+    print(getVotesFromImage(imageName))
+
 
