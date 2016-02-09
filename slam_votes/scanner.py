@@ -38,16 +38,16 @@ def getVotesFromImage(imageName):
     # blur = cv2.GaussianBlur(img, (5, 5), 10)
 
     # get black white image
-    thresholded_img = cv2.adaptiveThreshold(
+    working_img = cv2.adaptiveThreshold(
             img, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
             cv2.THRESH_BINARY, 41, 20)
     #invert image
-    thresholded_img = (255 - thresholded_img)
+    working_img = (255 - working_img)
 
 
 
     # detect lines in image 
-    # edges = cv2.Canny(thresholded_img, 50, 200, apertureSize = 3)
+    # edges = cv2.Canny(working_img, 50, 200, apertureSize = 3)
     # edges = cv2.Canny(color_img, 50, 200, apertureSize = 3)
     edges = cv2.Canny(img, 50, 100, apertureSize = 3)
     lines = cv2.HoughLinesP(edges, 1, numpy.pi/180, 100,  minLineLength = 50, maxLineGap=6)
@@ -97,7 +97,7 @@ def getVotesFromImage(imageName):
     M = numpy.float32([[1,0, shiftx],[0,1, shifty]])
     rows,cols = img.shape
     dst = cv2.warpAffine(img, M, (cols,rows))
-    thresholded_img = cv2.warpAffine(thresholded_img, M, (cols,rows))
+    working_img = cv2.warpAffine(working_img, M, (cols,rows))
     display_img = cv2.warpAffine(display_img, M, (cols,rows))
 
     x_range = x_maxline[0] - x_minline[0]
@@ -127,14 +127,14 @@ def getVotesFromImage(imageName):
             xend = xstart + xsize
             yend = ystart + ysize
             # sumatrix has different indexing than drawing rectangles
-            ar = thresholded_img[ystart:yend, xstart:xend]
+            ar = working_img[ystart:yend, xstart:xend]
             rectSum = numpy.sum(ar)
             if(rectSum > maxValues[row][0]):
                 maxValues[row] = (rectSum, i+1)
             if DEBUG:
                 print(" {}  {}".format(i+1, rectSum))
             if VISUAL_DEBUG:
-                cv2.rectangle(thresholded_img, (xstart, ystart),
+                cv2.rectangle(working_img, (xstart, ystart),
                               (xend, yend), (255, 255, 255), 1)
                 cv2.rectangle(display_img, (xstart, ystart),
                               (xend, yend), (0, 255, 0), 1)
@@ -155,7 +155,7 @@ def getVotesFromImage(imageName):
         # perform the actual resizing of the image and show it
         resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
         resizedResult = cv2.resize(
-                thresholded_img, dim, interpolation=cv2.INTER_AREA)
+                working_img, dim, interpolation=cv2.INTER_AREA)
 
         cv2.imshow("Original", resized)
         cv2.imshow("Result", resizedResult)
