@@ -50,10 +50,11 @@ def getVotesFromImage(imageName):
     # get black white image
     working_img = img.copy()
     working_img = cv2.GaussianBlur(working_img, (15, 15), 0)
-    tmp, working_img = cv2.threshold(working_img, 100, 255, cv2.THRESH_BINARY)
+    tmp, working_img = cv2.threshold(working_img, 100, 255, 
+            cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
 
-    if False and VISUAL_DEBUG:
+    if True and VISUAL_DEBUG:
         resizeAndDisplay(working_img, "Thresh", 1)
         resizeAndDisplay(display_img, "comp", 0)
 #    working_img = cv2.adaptiveThreshold(
@@ -103,7 +104,7 @@ def getVotesFromImage(imageName):
         displayLine(display_img, x_maxline)
         displayLine(display_img, y_minline)
         displayLine(display_img, y_maxline)
-        resizeAndDisplay(display_img, "Corners", 10)
+        resizeAndDisplay(display_img, "Corners", 0)
         #displayLine(working_img, x_minline)
         #displayLine(working_img, x_maxline)
         #displayLine(working_img, y_minline)
@@ -132,30 +133,43 @@ def getVotesFromImage(imageName):
     print("horizontal gradient 2: {} angle: {} ".format(m_hor_2, math.atan(m_hor_2)))
     # TODO rotation
 
-
-    x_offset = int(x_range * 0.5)
-    y_offset = int(y_range * 0.235)
-    xdiff = int((x_range / 1141) * 60)
-    ydiff = int((y_range / 1690) * 105)
+    # offset for first (first column in first row) box 
+    x_offset = x_range * 0.507
+    y_offset = y_range * 0.235
     # box size
-    xsize = int((x_range / 1141) * 50) 
-    ysize = int((y_range / 1690) * 50)  
+    xsize = x_range  * 0.052  
+    ysize = y_range  * 0.04
+    # distance between to boxes
+    xdiff = xsize 
+    ydiff = y_range * 0.0625
+
     maxValues = {}
-    print("xrange: {} yrange {} ".format(x_range, y_range))
+    if DEBUG:
+        print("xrange: {} yrange {} ".format(x_range, y_range))
+
+    # get non blured bw image 
+    tmp, non_blured_bw_img = cv2.threshold(img, 0, 255, 
+            cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU )
+    #translate this image
+    non_blured_bw_img = cv2.warpAffine(non_blured_bw_img, M, (cols,rows))
+
     for row in range(0, 12):
         maxValues[row] = (-1, 0)
         for i in range(0, 9):
-            xstart = x_offset + (i * xdiff)
-            ystart = y_offset + (row * ydiff)
-            xend = xstart + xsize
-            yend = ystart + ysize
+            xstart_f = x_offset + (i * xdiff)
+            xstart = int(round(xstart_f))
+            ystart_f = y_offset + (row * ydiff)
+            ystart = int(round(ystart_f))
+            xend = int(round(xstart_f + xsize))
+            yend = int(round(ystart_f + ysize))
+
             # sumatrix has different indexing than drawing rectangles
-            ar = working_img[ystart:yend, xstart:xend]
+            ar = non_blured_bw_img[ystart:yend, xstart:xend]
             rectSum = numpy.sum(ar)
             if(rectSum > maxValues[row][0]):
                 maxValues[row] = (rectSum, i+1)
             if DEBUG:
-                print(" {}  {}".format(i+1, rectSum))
+                print("Sum for box {} in row {}: {}".format(i+1, row, rectSum))
             if VISUAL_DEBUG:
                 cv2.rectangle(working_img, (xstart, ystart),
                               (xend, yend), (255, 255, 255), 1)
@@ -179,7 +193,8 @@ if __name__ == "__main__":
     VISUAL_DEBUG = True
     DEBUG = True
     imageName = "../testimages/card__859724459716.jpg"
-    imageName = "../testimages/card_webcam__898656717575.jpg"
+  #  imageName = "../testimages/card_webcam__898656717575.jpg"
     print(getVotesFromImage(imageName))
+    print(imageName)
 
 
