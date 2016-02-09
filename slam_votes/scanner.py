@@ -6,9 +6,12 @@ import os.path
 import sys
 import math
 
+# Debug switches
 DEBUG = False
 VISUAL_DEBUG = True 
-
+VISUAL_DEBUG_SHOW_BLURED_AND_THRESHOLDED_IMG = False
+VISUAL_DEBUG_SHOW_ALL_LINES = False
+VISUAL_DEBUG_SHOW_BOUNDING_EDGES = False
 
 def displayLine(img, line):
     x1, y1, x2, y2 = line
@@ -41,33 +44,23 @@ def getVotesFromImage(imageName):
     if VISUAL_DEBUG:
         display_img = cv2.imread(imageName, cv2.IMREAD_COLOR)
 
-
     # blur image
-    # http://docs.opencv.org/master/d4/d13/tutorial_py_filtering.html#gsc.tab=0
-    # getGaussianKernel
-    # blur = cv2.GaussianBlur(img, (5, 5), 10)
-
+    working_img = cv2.GaussianBlur(img, (15, 15), 0)
     # get black white image
-    working_img = img.copy()
-    working_img = cv2.GaussianBlur(working_img, (15, 15), 0)
     tmp, working_img = cv2.threshold(working_img, 100, 255, 
             cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-
-    if True and VISUAL_DEBUG:
+    if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_ALL_LINES:
         resizeAndDisplay(working_img, "Thresh", 1)
         resizeAndDisplay(display_img, "comp", 0)
-#    working_img = cv2.adaptiveThreshold(
-#            img, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-#            cv2.THRESH_BINARY, 41, 20)
+
     #invert image
     working_img = (255 - working_img)
 
-
-
     # detect lines in image 
     edges = cv2.Canny(working_img, 100, 200, apertureSize = 3)
-    lines = cv2.HoughLinesP(edges, 1, numpy.pi/180, 40,  minLineLength = 10, maxLineGap=6)
+    lines = cv2.HoughLinesP(edges, 1, numpy.pi/180, 40,
+            minLineLength = 10, maxLineGap=6)
     if DEBUG and (lines is not None):
         print("Deteted {} lines in image".format(len(lines)))
     x_min = sys.maxsize
@@ -104,18 +97,22 @@ def getVotesFromImage(imageName):
         displayLine(display_img, x_maxline)
         displayLine(display_img, y_minline)
         displayLine(display_img, y_maxline)
-        resizeAndDisplay(display_img, "Corners", 0)
-        #displayLine(working_img, x_minline)
-        #displayLine(working_img, x_maxline)
-        #displayLine(working_img, y_minline)
-        #displayLine(working_img, y_maxline)
-       # resizeAndDisplay(working_img, "Working Corners", 0)
+
+    if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_BOUNDING_EDGES:
+        resizeAndDisplay(display_img, "Bounding edges", 1)
+        displayLine(working_img, x_minline)
+        displayLine(working_img, x_maxline)
+        displayLine(working_img, y_minline)
+        displayLine(working_img, y_maxline)
+        resizeAndDisplay(working_img, "Bounding edges in working_img", 0)
+
     m_vert_1 = getGradient(x_minline)
     m_vert_2 = getGradient(x_maxline)
 
     m_hor_1 = getGradient(y_minline)
     m_hor_2 = getGradient(y_maxline)
 
+    # translate images 
     shiftx = 0 - x_minline[0]
     shifty = 0 - y_minline[1]
     M = numpy.float32([[1,0, shiftx],[0,1, shifty]])
@@ -134,10 +131,10 @@ def getVotesFromImage(imageName):
     # TODO rotation
 
     # offset for first (first column in first row) box 
-    x_offset = x_range * 0.507
+    x_offset = x_range * 0.505
     y_offset = y_range * 0.235
     # box size
-    xsize = x_range  * 0.052  
+    xsize = x_range  * 0.05  
     ysize = y_range  * 0.04
     # distance between to boxes
     xdiff = xsize 
