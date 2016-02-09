@@ -111,33 +111,37 @@ def getVotesFromImage(imageName):
         displayLine(working_img, y_maxline)
         resizeAndDisplay(working_img, "Bounding edges in working_img", 0)
 
-    # get gradients for the bounding box
-    m_vert_1 = getGradient(x_minline)
-    m_vert_2 = getGradient(x_maxline)
-    m_hor_1 = getGradient(y_minline)
-    m_hor_2 = getGradient(y_maxline)
-
+#    # TODO rotation
+#    # get gradients for the bounding box
+#    m_vert_1 = getGradient(x_minline)
+#    m_vert_2 = getGradient(x_maxline)
+#    m_hor_1 = getGradient(y_minline)
+#    m_hor_2 = getGradient(y_maxline)
+#    print("vertical gradient 1: {} angle: {} ".format(
+#        m_vert_1, math.atan(m_vert_1)))
+#    print("vertical gradient 2: {} angle: {} ".format(
+#        m_vert_2, math.atan(m_vert_2)))
+#    print("horizontal gradient 1: {} angle: {} ".format(
+#        m_hor_1, math.atan(m_hor_1)))
+#    print("horizontal gradient 2: {} angle: {} ".format(
+#        m_hor_2, math.atan(m_hor_2)))
+#
     # translate images
-    shiftx = 0 - x_minline[0]
-    shifty = 0 - y_minline[1]
-    M = numpy.float32([[1, 0, shiftx], [0, 1, shifty]])
+
+    min_x = int(round((x_minline[0] + x_minline[2]) / 2))
+    min_y = int(round((y_minline[1] +  y_minline[3]) / 2))
+    M = numpy.float32([[1, 0, -1 * min_x], [0, 1, -1 * min_y]])
     rows, cols = img.shape
     dst = cv2.warpAffine(img, M, (cols, rows))
     working_img = cv2.warpAffine(working_img, M, (cols, rows))
     display_img = cv2.warpAffine(display_img, M, (cols, rows))
 
-    x_range = x_maxline[0] - x_minline[0]
-    y_range = y_maxline[1] - y_minline[1]
 
-    print("vertical gradient 1: {} angle: {} ".format(
-        m_vert_1, math.atan(m_vert_1)))
-    print("vertical gradient 2: {} angle: {} ".format(
-        m_vert_2, math.atan(m_vert_2)))
-    print("horizontal gradient 1: {} angle: {} ".format(
-        m_hor_1, math.atan(m_hor_1)))
-    print("horizontal gradient 2: {} angle: {} ".format(
-        m_hor_2, math.atan(m_hor_2)))
-    # TODO rotation
+    max_x = int(round((x_maxline[0] + x_maxline[2]) / 2))
+    max_y = int(round((y_maxline[1] +  y_maxline[3]) / 2))
+    x_range = max_x - min_x
+    y_range = max_y - min_y
+
 
     # offset for first (first column in first row) box
     x_offset = x_range * 0.505
