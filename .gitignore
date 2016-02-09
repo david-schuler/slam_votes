@@ -60,3 +60,20 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# Vim
+*.swp
+*.swo
+
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+attic
