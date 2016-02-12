@@ -61,10 +61,6 @@ def getVotesFromImage(imageName):
 
     # invert image
     working_img = (255 - working_img)
-    cv2.imshow('kacka', working_img)
-    cv2.waitKey()
-
-
 
     # detect lines in image
     edges = cv2.Canny(working_img, 100, 200, apertureSize=3)
@@ -139,7 +135,6 @@ def getVotesFromImage(imageName):
     working_img = cv2.warpAffine(working_img, M, (cols, rows))
     display_img = cv2.warpAffine(display_img, M, (cols, rows))
 
-
     max_x = int(round((x_maxline[0] + x_maxline[2]) / 2))
     max_y = int(round((y_maxline[1] + y_maxline[3]) / 2))
     x_range = max_x - min_x
@@ -205,7 +200,7 @@ def getVotesFromImage(imageName):
 if __name__ == "__main__":
     VISUAL_DEBUG = True
     DEBUG = True
-    imageName = "../testimages/card_webcam__898656717575.jpg"
+    imageName = "../testimages/card__859724459716.jpg"
     #  imageName = "../testimages/card_webcam__898656717575.jpg"
     print(getVotesFromImage(imageName))
     print(imageName)
