@@ -9,9 +9,17 @@ import math
 # Debug switches
 DEBUG = False
 VISUAL_DEBUG = True
-VISUAL_DEBUG_SHOW_BLURED_AND_THRESHOLDED_IMG = False
+VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = False
 VISUAL_DEBUG_SHOW_ALL_LINES = False
 VISUAL_DEBUG_SHOW_BOUNDING_EDGES = False
+VISUAL_DEBUG_SHOW_VOTE_IMG = False 
+VISUAL_DEBUG_IMAGE_WITH = 300
+
+USE_ADAPTIVE_THRESHOLDING = False
+
+
+THRESHOLD_BOUNDARY_EDGES = 0
+THRESHOLD_VOTES = 0
 
 
 # draws a line with given coordinate and color in an image
@@ -25,18 +33,31 @@ def getGradient(line):
     m = 0
     if x1 != x2:
         m = (y2 - y1) / (x2 - x1)
+    else:
+        m = sys.maxsize 
     return m
 
 
-def resizeAndDisplay(img, name, wait):
+def resizeAndDisplay(img, name, wait, translate=0):
     # resize image
-    new_with = 500
+    new_with = VISUAL_DEBUG_IMAGE_WITH
     # the ratio of the new image to the old image
     r = new_with / img.shape[1]
     dim = (new_with, int(img.shape[0] * r))
     resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
     cv2.imshow(name, resized)
+    if translate != 0:
+        cv2.moveWindow(name, translate, 0)
     cv2.waitKey(wait)
+
+# maximum angle of pi/4 (equals gradient=1) is considered as vertical
+def isVertical(line):
+    grad = getGradient(line)
+    return abs(grad) > 1
+
+
+def isHorizontal(line):
+    return not isVertical(line)
 
 
 def getVotesFromImage(imageName):
@@ -51,13 +72,20 @@ def getVotesFromImage(imageName):
     # blur image
     working_img = cv2.GaussianBlur(img, (15, 15), 0)
     # get black white image
+    threshold_method = cv2.THRESH_BINARY
+    if THRESHOLD_BOUNDARY_EDGES == 0:
+        threshold_method = cv2.THRESH_BINARY + cv2.THRESH_OTSU
     tmp, working_img = cv2.threshold(
-            working_img, 100, 255,
-            cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            working_img, THRESHOLD_BOUNDARY_EDGES, 255,
+            threshold_method)
 
-    if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_BLURED_AND_THRESHOLDED_IMG:
-        resizeAndDisplay(working_img, "Thresh", 1)
-        resizeAndDisplay(display_img, "comp", 0)
+    if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG:
+        resizeAndDisplay(
+                working_img, "Threshshold and binary", 1,
+                VISUAL_DEBUG_IMAGE_WITH)
+        resizeAndDisplay(
+                display_img, "Comparison", 0,
+                VISUAL_DEBUG_IMAGE_WITH *2)
 
     # invert image
     working_img = (255 - working_img)
@@ -77,21 +105,23 @@ def getVotesFromImage(imageName):
     x_maxline = None
     y_minline = None
     y_maxline = None
+    print(lines.shape)
+    # Values for test on Mac:
+    # (145, 1, 4) (22, 1, 4) (29, 1, 4) (10, 1, 4) (7, 1, 4)
     for i in lines:
         # for some reason i is an array with 1 line as item
         line = i[0]
         x1, y1, x2, y2 = line
-        # TODO if isVertical(line)
-        if x1 > x_max or x2 > x_max:
+        if (x1 > x_max or x2 > x_max) and isVertical(line):
             x_max = max(x1, x2)
             x_maxline = line
-        if x1 < x_min or x2 < x_min:
+        if (x1 < x_min or x2 < x_min) and isVertical(line):
             x_min = min(x1, x2)
             x_minline = line
-        if y1 > y_max or y2 > y_max:
+        if (y1 > y_max or y2 > y_max) and isHorizontal(line):
             y_max = max(y1, y2)
             y_maxline = line
-        if y1 < y_min or y2 < y_min:
+        if (y1 < y_min or y2 < y_min) and isHorizontal(line):
             y_min = min(y1, y2)
             y_minline = line
         if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_ALL_LINES:
@@ -109,7 +139,7 @@ def getVotesFromImage(imageName):
         displayLine(working_img, x_maxline)
         displayLine(working_img, y_minline)
         displayLine(working_img, y_maxline)
-        resizeAndDisplay(working_img, "Bounding edges in working_img", 0)
+        resizeAndDisplay(working_img, "Bounding edges in working_img", 1)
 
 #    # TODO rotation
 #    # get gradients for the bounding box
@@ -118,16 +148,15 @@ def getVotesFromImage(imageName):
 #    m_hor_1 = getGradient(y_minline)
 #    m_hor_2 = getGradient(y_maxline)
 #    print("vertical gradient 1: {} angle: {} ".format(
-#        m_vert_1, math.atan(m_vert_1)))
+#        m_vert_1, math.atan(m_vert_1)/ math.pi))
 #    print("vertical gradient 2: {} angle: {} ".format(
-#        m_vert_2, math.atan(m_vert_2)))
+#        m_vert_2, math.atan(m_vert_2)/ math.pi))
 #    print("horizontal gradient 1: {} angle: {} ".format(
-#        m_hor_1, math.atan(m_hor_1)))
+#        m_hor_1, math.atan(m_hor_1/ math.pi)))
 #    print("horizontal gradient 2: {} angle: {} ".format(
-#        m_hor_2, math.atan(m_hor_2)))
-#
-    # translate images
+#        m_hor_2, math.atan(m_hor_2)/ math.pi))
 
+    # translate images
     min_x = int(round((x_minline[0] + x_minline[2]) / 2))
     min_y = int(round((y_minline[1] + y_minline[3]) / 2))
     M = numpy.float32([[1, 0, -1 * min_x], [0, 1, -1 * min_y]])
@@ -155,13 +184,30 @@ def getVotesFromImage(imageName):
     if DEBUG:
         print("xrange: {} yrange {} ".format(x_range, y_range))
 
-    # get non blured bw image
-    tmp, non_blured_bw_img = cv2.threshold(
-            img, 0, 255,
-            cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # adaptive thresholding can be activated for testing puproses
+    if USE_ADAPTIVE_THRESHOLDING:
+        # calculate window size relative to size of the vote box
+        window_size = int(xsize / 10) * 2 + 1
+        window_size = max(window_size, 3)
+        non_blured_bw_img = cv2.adaptiveThreshold(
+                img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY_INV, window_size, 5)
+    else:
+        # get non blured bw image
+        threshold_method = cv2.THRESH_BINARY_INV 
+        if THRESHOLD_VOTES == 0:
+            threshold_method = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+        tmp, non_blured_bw_img = cv2.threshold(
+                img, THRESHOLD_VOTES, 255,
+                threshold_method)
     # translate this image
     non_blured_bw_img = cv2.warpAffine(non_blured_bw_img, M, (cols, rows))
-
+    if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_VOTE_IMG:
+        resizeAndDisplay(non_blured_bw_img, "Nonblured bw Votes", 1,
+                         VISUAL_DEBUG_IMAGE_WITH)
+    # make this image the new working image,
+    # the old one is only needed for the boundaries.
+    working_img = non_blured_bw_img
     for row in range(0, 12):
         maxValues[row] = (-1, 0)
         for i in range(0, 9):
@@ -186,6 +232,10 @@ def getVotesFromImage(imageName):
                               (xend, yend), (0, 255, 0), 1)
     votes = [v[1] for v in maxValues.values()]
 
+    if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_VOTE_IMG:
+        resizeAndDisplay(working_img, "Vote with boxes", 100,
+                VISUAL_DEBUG_IMAGE_WITH *2)
+
     if DEBUG:
         print(maxValues)
         print(votes)
@@ -193,7 +243,6 @@ def getVotesFromImage(imageName):
             print("{} : {}".format(key, value[1]))
 
     if VISUAL_DEBUG:
-        resizeAndDisplay(working_img, "Result", 10)
         resizeAndDisplay(display_img, "Display Image", 3000)
     return votes
 
