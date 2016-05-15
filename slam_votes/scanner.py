@@ -5,21 +5,49 @@ import numpy
 import os.path
 import sys
 import math
+import configtest
+
+cfg = configtest.getConfig("NONE")
 
 # Debug switches
+
 DEBUG = False
-VISUAL_DEBUG = True
+VISUAL_DEBUG = False
 VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = False
 VISUAL_DEBUG_SHOW_ALL_LINES = False
 VISUAL_DEBUG_SHOW_BOUNDING_EDGES = False
-VISUAL_DEBUG_SHOW_VOTE_IMG = False 
-VISUAL_DEBUG_IMAGE_WITH = 300
+VISUAL_DEBUG_SHOW_VOTE_IMG = False
+VISUAL_DEBUG_IMAGE_WIDTH = False
 
 USE_ADAPTIVE_THRESHOLDING = False
 
-
 THRESHOLD_BOUNDARY_EDGES = 0
 THRESHOLD_VOTES = 0
+
+
+def initGlobals(cfg):
+    global DEBUG
+    DEBUG = cfg.getBoolean('show_messages')
+    global VISUAL_DEBUG
+    VISUAL_DEBUG = cfg.getBoolean('show_images')
+    global VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG
+    VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = cfg.getBoolean('show_bounding_edges') 
+    global VISUAL_DEBUG_SHOW_ALL_LINES
+    VISUAL_DEBUG_SHOW_ALL_LINES = cfg.getBoolean('show_all_lines')
+    global VISUAL_DEBUG_SHOW_BOUNDING_EDGES
+    VISUAL_DEBUG_SHOW_BOUNDING_EDGES = cfg.getBoolean('show_bounding_edges')
+    global VISUAL_DEBUG_SHOW_VOTE_IMG
+    VISUAL_DEBUG_SHOW_VOTE_IMG = cfg.getBoolean('show_vote_img')
+    global VISUAL_DEBUG_IMAGE_WIDTH
+    VISUAL_DEBUG_IMAGE_WIDTH = cfg.getInt('image_width')
+
+    global USE_ADAPTIVE_THRESHOLDING
+    USE_ADAPTIVE_THRESHOLDING = cfg.getBoolean('use_adaptive_thresholding')
+
+    global THRESHOLD_BOUNDARY_EDGES
+    THRESHOLD_BOUNDARY_EDGES = cfg.get('threshold_boundary_edges')
+    global THRESHOLD_VOTES
+    THRESHOLD_VOTES = cfg.get('threshold_votes')
 
 
 # draws a line with given coordinate and color in an image
@@ -40,7 +68,7 @@ def getGradient(line):
 
 def resizeAndDisplay(img, name, wait, translate=0):
     # resize image
-    new_with = VISUAL_DEBUG_IMAGE_WITH
+    new_with = VISUAL_DEBUG_IMAGE_WIDTH
     # the ratio of the new image to the old image
     r = new_with / img.shape[1]
     dim = (new_with, int(img.shape[0] * r))
@@ -82,10 +110,10 @@ def getVotesFromImage(imageName):
     if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG:
         resizeAndDisplay(
                 working_img, "Threshshold and binary", 1,
-                VISUAL_DEBUG_IMAGE_WITH)
+                VISUAL_DEBUG_IMAGE_WIDTH)
         resizeAndDisplay(
                 display_img, "Comparison", 0,
-                VISUAL_DEBUG_IMAGE_WITH *2)
+                VISUAL_DEBUG_IMAGE_WIDTH *2)
 
     # invert image
     working_img = (255 - working_img)
@@ -204,7 +232,7 @@ def getVotesFromImage(imageName):
     non_blured_bw_img = cv2.warpAffine(non_blured_bw_img, M, (cols, rows))
     if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_VOTE_IMG:
         resizeAndDisplay(non_blured_bw_img, "Nonblured bw Votes", 1,
-                         VISUAL_DEBUG_IMAGE_WITH)
+                         VISUAL_DEBUG_IMAGE_WIDTH)
     # make this image the new working image,
     # the old one is only needed for the boundaries.
     working_img = non_blured_bw_img
@@ -234,7 +262,7 @@ def getVotesFromImage(imageName):
 
     if VISUAL_DEBUG and VISUAL_DEBUG_SHOW_VOTE_IMG:
         resizeAndDisplay(working_img, "Vote with boxes", 100,
-                VISUAL_DEBUG_IMAGE_WITH *2)
+                VISUAL_DEBUG_IMAGE_WIDTH *2)
 
     if DEBUG:
         print(maxValues)
