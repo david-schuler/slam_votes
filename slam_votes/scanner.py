@@ -1,5 +1,6 @@
 from __future__ import division
 from __future__ import print_function
+
 import cv2
 import numpy
 import os.path
@@ -7,17 +8,17 @@ import sys
 import math
 import configtest
 
-cfg = configtest.getConfig("NONE")
+#cfg = configtest.getConfig("NONE")
 
 # Debug switches
 
 DEBUG = False
-VISUAL_DEBUG = False
-VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = False
-VISUAL_DEBUG_SHOW_ALL_LINES = False
+VISUAL_DEBUG = True
+VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = True
+VISUAL_DEBUG_SHOW_ALL_LINES = True
 VISUAL_DEBUG_SHOW_BOUNDING_EDGES = False
 VISUAL_DEBUG_SHOW_VOTE_IMG = False
-VISUAL_DEBUG_IMAGE_WIDTH = False
+VISUAL_DEBUG_IMAGE_WIDTH = 500 
 
 USE_ADAPTIVE_THRESHOLDING = False
 
@@ -25,29 +26,29 @@ THRESHOLD_BOUNDARY_EDGES = 0
 THRESHOLD_VOTES = 0
 
 
-def initGlobals(cfg):
-    global DEBUG
-    DEBUG = cfg.getBoolean('show_messages')
-    global VISUAL_DEBUG
-    VISUAL_DEBUG = cfg.getBoolean('show_images')
-    global VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG
-    VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = cfg.getBoolean('show_bounding_edges') 
-    global VISUAL_DEBUG_SHOW_ALL_LINES
-    VISUAL_DEBUG_SHOW_ALL_LINES = cfg.getBoolean('show_all_lines')
-    global VISUAL_DEBUG_SHOW_BOUNDING_EDGES
-    VISUAL_DEBUG_SHOW_BOUNDING_EDGES = cfg.getBoolean('show_bounding_edges')
-    global VISUAL_DEBUG_SHOW_VOTE_IMG
-    VISUAL_DEBUG_SHOW_VOTE_IMG = cfg.getBoolean('show_vote_img')
-    global VISUAL_DEBUG_IMAGE_WIDTH
-    VISUAL_DEBUG_IMAGE_WIDTH = cfg.getInt('image_width')
-
-    global USE_ADAPTIVE_THRESHOLDING
-    USE_ADAPTIVE_THRESHOLDING = cfg.getBoolean('use_adaptive_thresholding')
-
-    global THRESHOLD_BOUNDARY_EDGES
-    THRESHOLD_BOUNDARY_EDGES = cfg.get('threshold_boundary_edges')
-    global THRESHOLD_VOTES
-    THRESHOLD_VOTES = cfg.get('threshold_votes')
+# def initGlobals(cfg):
+#     global DEBUG
+#     DEBUG = cfg.getBoolean('show_messages')
+#     global VISUAL_DEBUG
+#     VISUAL_DEBUG = cfg.getBoolean('show_images')
+#     global VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG
+#     VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = cfg.getBoolean('show_bounding_edges') 
+#     global VISUAL_DEBUG_SHOW_ALL_LINES
+#     VISUAL_DEBUG_SHOW_ALL_LINES = cfg.getBoolean('show_all_lines')
+#     global VISUAL_DEBUG_SHOW_BOUNDING_EDGES
+#     VISUAL_DEBUG_SHOW_BOUNDING_EDGES = cfg.getBoolean('show_bounding_edges')
+#     global VISUAL_DEBUG_SHOW_VOTE_IMG
+#     VISUAL_DEBUG_SHOW_VOTE_IMG = cfg.getBoolean('show_vote_img')
+#     global VISUAL_DEBUG_IMAGE_WIDTH
+#     VISUAL_DEBUG_IMAGE_WIDTH = cfg.getInt('image_width')
+# 
+#     global USE_ADAPTIVE_THRESHOLDING
+#     USE_ADAPTIVE_THRESHOLDING = cfg.getBoolean('use_adaptive_thresholding')
+# 
+#     global THRESHOLD_BOUNDARY_EDGES
+#     THRESHOLD_BOUNDARY_EDGES = cfg.get('threshold_boundary_edges')
+#     global THRESHOLD_VOTES
+#     THRESHOLD_VOTES = cfg.get('threshold_votes')
 
 
 # draws a line with given coordinate and color in an image
@@ -72,6 +73,7 @@ def resizeAndDisplay(img, name, wait, translate=0):
     # the ratio of the new image to the old image
     r = new_with / img.shape[1]
     dim = (new_with, int(img.shape[0] * r))
+    print("New dim" , dim)
     resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
     cv2.imshow(name, resized)
     if translate != 0:
@@ -89,13 +91,20 @@ def isHorizontal(line):
 
 
 def getVotesFromImage(imageName):
-    # load the image and convert it to grayscale
     if not os.path.exists(imageName):
         raise RuntimeError("File not found: {}".format(imageName))
+
+    # load the image and convert it to grayscale
     img = cv2.imread(imageName, cv2.CV_8UC1)
 
     if VISUAL_DEBUG:
         display_img = cv2.imread(imageName, cv2.IMREAD_COLOR)
+    return getVotesFromCV2Img(img)
+
+def getVotesFromCV2Img(img):
+
+    if VISUAL_DEBUG:
+        display_img = img.copy()
 
     # blur image
     working_img = cv2.GaussianBlur(img, (15, 15), 0)
@@ -191,7 +200,8 @@ def getVotesFromImage(imageName):
     rows, cols = img.shape
     dst = cv2.warpAffine(img, M, (cols, rows))
     working_img = cv2.warpAffine(working_img, M, (cols, rows))
-    display_img = cv2.warpAffine(display_img, M, (cols, rows))
+    if VISUAL_DEBUG:
+        display_img = cv2.warpAffine(display_img, M, (cols, rows))
 
     max_x = int(round((x_maxline[0] + x_maxline[2]) / 2))
     max_y = int(round((y_maxline[1] + y_maxline[3]) / 2))

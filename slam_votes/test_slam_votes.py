@@ -19,8 +19,9 @@ class TestSlamVotes(unittest.TestCase):
                 fullFilename = os.path.join(directory, filename) 
                 actualResult = getVotesFromImage(fullFilename)
                 self.assertEqual(actualResult, expectedList, msg="\nFailure for test image: {}".format(fullFilename))
+                print("Success for" + filename)
 
-    def test_card_1(self):
+    def x_test_card_1(self):
         l = getVotesFromImage("../testimages/card__859724459716.jpg")
         expected = [8, 5, 9, 7, 2, 4, 4, 5, 9, 7, 1, 6]
         self.assertEqual(l, expected)
