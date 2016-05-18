@@ -6,25 +6,37 @@ import numpy
 import os.path
 import sys
 import math
-import configtest
+#import configtest
 
 #cfg = configtest.getConfig("NONE")
 
 # Debug switches
 
-DEBUG = False
-VISUAL_DEBUG = True
-VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = True
-VISUAL_DEBUG_SHOW_ALL_LINES = True
+DEBUG = False 
+VISUAL_DEBUG = False
+VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = False
+VISUAL_DEBUG_SHOW_ALL_LINES = False
 VISUAL_DEBUG_SHOW_BOUNDING_EDGES = False
 VISUAL_DEBUG_SHOW_VOTE_IMG = False
 VISUAL_DEBUG_IMAGE_WIDTH = 500 
-
+VISUAL_DEBUG_WAIT_FOR_KEYPRESS = False
 USE_ADAPTIVE_THRESHOLDING = False
 
 THRESHOLD_BOUNDARY_EDGES = 0
 THRESHOLD_VOTES = 0
 
+def setCameraDebugValues():
+    DEBUG = True 
+    VISUAL_DEBUG = True
+    VISUAL_DEBUG_SHOW_NONBLURED_AND_THRESHOLDED_IMG = True
+    VISUAL_DEBUG_SHOW_ALL_LINES = True
+    VISUAL_DEBUG_SHOW_BOUNDING_EDGES = False
+    VISUAL_DEBUG_SHOW_VOTE_IMG = False
+    VISUAL_DEBUG_IMAGE_WIDTH = 500 
+    USE_ADAPTIVE_THRESHOLDING = False
+    THRESHOLD_BOUNDARY_EDGES = 0
+    THRESHOLD_VOTES = 0
+    VISUAL_DEBUG_WAIT_FOR_KEYPRESS = False
 
 # def initGlobals(cfg):
 #     global DEBUG
@@ -78,7 +90,8 @@ def resizeAndDisplay(img, name, wait, translate=0):
     cv2.imshow(name, resized)
     if translate != 0:
         cv2.moveWindow(name, translate, 0)
-    cv2.waitKey(wait)
+    if VISUAL_DEBUG_WAIT_FOR_KEYPRESS:
+        cv2.waitKey(wait)
 
 # maximum angle of pi/4 (equals gradient=1) is considered as vertical
 def isVertical(line):
@@ -107,7 +120,7 @@ def getVotesFromCV2Img(img):
         display_img = img.copy()
 
     # blur image
-    working_img = cv2.GaussianBlur(img, (15, 15), 0)
+    working_img = cv2.GaussianBlur(img, (3, 3), 0)
     # get black white image
     threshold_method = cv2.THRESH_BINARY
     if THRESHOLD_BOUNDARY_EDGES == 0:
@@ -129,6 +142,8 @@ def getVotesFromCV2Img(img):
 
     # detect lines in image
     edges = cv2.Canny(working_img, 100, 200, apertureSize=3)
+    if DEBUG:
+        print("Edges: {}".format(len(edges)))
     lines = cv2.HoughLinesP(
             edges, 1, numpy.pi/180, 40,
             minLineLength=10, maxLineGap=6)
@@ -142,12 +157,13 @@ def getVotesFromCV2Img(img):
     x_maxline = None
     y_minline = None
     y_maxline = None
-    print(lines.shape)
     # Values for test on Mac:
     # (145, 1, 4) (22, 1, 4) (29, 1, 4) (10, 1, 4) (7, 1, 4)
-    for i in lines:
+    #for i in lines:
+    for i in lines[0]:
         # for some reason i is an array with 1 line as item
-        line = i[0]
+        line = i
+        #line = i[0]
         x1, y1, x2, y2 = line
         if (x1 > x_max or x2 > x_max) and isVertical(line):
             x_max = max(x1, x2)
@@ -282,6 +298,11 @@ def getVotesFromCV2Img(img):
 
     if VISUAL_DEBUG:
         resizeAndDisplay(display_img, "Display Image", 3000)
+    if DEBUG:
+        print("Expected 1: {} ".format(votes == [2,6,5,6,5,9,7,5,9,7,3,5]))
+        print("Expected 2: {} ".format(votes == [8,5,9,7,2,4,4,5,9,7,1,6]))
+        print("Expected 3: {} ".format(votes == [8,9,8,6,5,6,7,1,7,5,7,5]))
+
     return votes
 
 
