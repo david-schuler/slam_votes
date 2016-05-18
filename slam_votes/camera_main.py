@@ -50,7 +50,9 @@ def processResult(result, totalResult, voteCount, f):
         print("{:>3}  : {:>4} ".format(c,r))
 
 if __name__ == '__main__':
+    print(len(sys.argv))
     if len(sys.argv) >= 2:
+        print(sys.argv[1])
         if sys.argv[1] == 'debug':
             setCameraDebugValues()
     main()
