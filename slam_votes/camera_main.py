@@ -29,8 +29,9 @@ def main():
         if k == 32: #32 on mac #1048608:   #Space
             print('___TAKING PICTURE___')
 
-            img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            result = getVotesFromCV2Img(img)
+            #img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            result = getVotesFromCV2Img(frame)
             voteCount += 1
             processResult(result, totalResult, voteCount, f)
         if k == 27: #27 on mac 1048603:   #ESC
